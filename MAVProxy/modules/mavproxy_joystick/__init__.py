@@ -149,6 +149,7 @@ class Joystick(mp_module.MPModule):
             # self.log('channels: {}'.format(override), level=3)
 
             if override != self.module('rc').override:
+                self.log('Joystick Override mismatch', level=3)
                 self.module('rc').override = override
                 self.module('rc').override_period.force()
 
