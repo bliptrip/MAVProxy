@@ -1,0 +1,47 @@
+description: >
+    Fake Sony PLAYSTATION(R)4 Controller.
+match:
+  - 'Fake Sony Computer Entertainment Wireless Controller'
+controls:
+  #Throttle on channel 3
+  - channel: 3
+    type: axis 
+    id: 1
+    invert: true
+  #Yaw on channel 4
+  - channel: 4
+    type: axis 
+    id: 0
+    invert: true
+  #Pitch on channel 2
+  - channel: 2
+    type: axis
+    id: 5
+  #Roll on channel 1
+  - channel: 1
+    type: axis
+    id: 2
+  #L1 - Take picture
+  #- channel: 8
+  #  type: button
+  #  id: 4
+  #R1 - Take video
+  #- channel: 9
+  #  type: button
+  #  id: 5
+  #X hat switch - Arm Switch
+  - channel: 6
+    type: hat
+    id: 0
+    axis: x
+    outlow: 800
+    outhigh: 2200
+  #Y hat switch - Kill Switch
+  - channel: 10
+    type: hat
+    id: 0
+    axis: y
+  #Home - RTL
+  - channel: 8
+    type: button    
+    id: 12
