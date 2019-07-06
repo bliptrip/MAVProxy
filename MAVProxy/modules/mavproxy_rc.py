@@ -8,10 +8,16 @@ from MAVProxy.modules.lib import mp_module
 class RCModule(mp_module.MPModule):
     def __init__(self, mpstate):
         super(RCModule, self).__init__(mpstate, "rc", "rc command handling", public = True)
-        self.override = [ 0 ] * 16
-        self.last_override = [ 0 ] * 16
+        if self.sitl_output:
+            self.rc_channel_unused = 0
+            self.rc_channels_max_num = 16
+        else:
+            self.rc_channel_unused = 0
+            self.rc_channels_max_num = 18
+        self.override = [ self.rc_channel_unused ] * self.rc_channels_max_num
+        self.last_override = [ self.rc_channel_unused ] * self.rc_channels_max_num
         self.override_counter = 0
-        self.add_command('rc', self.cmd_rc, "RC input control", ['<1|2|3|4|5|6|7|8|all>'])
+        self.add_command('rc', self.cmd_rc, "RC input control", ['<%s|all>' % ('|' % map(lambda x: str(x), range(1,22)))])
         self.add_command('switch', self.cmd_switch, "flight mode switch control", ['<0|1|2|3|4|5|6>'])
         if self.sitl_output:
             self.override_period = mavutil.periodic_event(20)
@@ -20,7 +26,7 @@ class RCModule(mp_module.MPModule):
 
     def idle_task(self):
         if self.override_period.trigger():
-            if (self.override != [ 0 ] * 16 or
+            if (self.override != [ self.rc_channel_unused ] * self.rc_channels_max_num or
                 self.override != self.last_override or
                 self.override_counter > 0):
                 self.last_override = self.override[:]
@@ -31,14 +37,14 @@ class RCModule(mp_module.MPModule):
     def send_rc_override(self):
         '''send RC override packet'''
         if self.sitl_output:
-            buf = struct.pack('<HHHHHHHHHHHHHHHH',
+            buf = struct.pack('<%s' % (''.join(['H']*self.rc_channels_max_num)),
                               *self.override)
             self.sitl_output.write(buf)
         else:
-            chan8 = self.override[:8]
+            ovr = self.override[:self.rc_channels_max_num]
             self.master.mav.rc_channels_override_send(self.target_system,
                                                            self.target_component,
-                                                           *chan8)
+                                                           *ovr)
 
     def cmd_switch(self, args):
         '''handle RC switch changes'''
@@ -95,12 +101,12 @@ class RCModule(mp_module.MPModule):
             value = 65535
         channels = self.override
         if args[0] == 'all':
-            for i in range(16):
+            for i in range(self.rc_channels_max_num):
                 channels[i] = value
         else:
             channel = int(args[0])
-            if channel < 1 or channel > 16:
-                print("Channel must be between 1 and 8 or 'all'")
+            if channel < 1 or channel > self.rc_channels_max_num:
+                print("Channel must be between 1 and %d or 'all'" % (self.rc_channels_max_num))
                 return
             channels[channel - 1] = value
         self.set_override(channels)
