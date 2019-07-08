@@ -21,23 +21,25 @@ controls:
   - channel: 1
     type: axis
     id: 2
-  #L1 - Take picture
-  #- channel: 8
-  #  type: button
-  #  id: 4
-  #R1 - Take video
-  #- channel: 9
-  #  type: button
-  #  id: 5
+  #Mode selection
+  - channel: 5
+    type: multibutton
+    buttons:
+        - id: 0
+          value: 1080
+        - id: 1
+          value: 1240
+        - id: 2
+          value: 1400
+        - id: 3
+          value: 1560
   #X hat switch - Arm Switch
   - channel: 6
     type: hat
     id: 0
     axis: x
-    outlow: 800
-    outhigh: 2200
   #Y hat switch - Kill Switch
-  - channel: 10
+  - channel: 7
     type: hat
     id: 0
     axis: y
