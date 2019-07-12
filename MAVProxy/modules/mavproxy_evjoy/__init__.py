@@ -58,7 +58,7 @@ class EvJoy(mp_module.MPModule):
         if userevjoys is not None and os.path.isdir(userevjoys):
             search.append(userevjoys)
 
-        search.append(pkg_resources.resource_filename(__name__, 'evjoy'))
+        search.append(pkg_resources.resource_filename(__name__, 'joysticks'))
 
         for path in search:
             self.log('Looking for evjoy definitions in {}'.format(path),
