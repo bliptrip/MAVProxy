@@ -1,6 +1,7 @@
 [Unit]
 Description=A Mavlink Communication Bridge Service through a RPi using Ardupilot/MAVProxy
-Requires=graphical.target ds4drv.service
+Requires=ds4drv.service
+After=ds4drv.service
 
 #Usage: mavproxy.py [options]
 #
@@ -61,13 +62,13 @@ Requires=graphical.target ds4drv.service
 WorkingDirectory=/home/pi/.mavproxy/
 Environment="DISPLAY=:0.0"
 Environment="XAUTHORITY=/home/pi/.Xauthority"
-Environment="MAVPROXY_JOYSTICK_DIR=/home/pi/.config/mavproxy/joysticks"
+Environment="MAVPROXY_EVJOY_DIR=/home/pi/.config/mavproxy/joysticks"
 Environment="LOCALAPPDATA=/home/pi/.mavproxy"
-ExecStart=/usr/local/bin/mavproxy.py --master=/dev/ttyUSB0,57600 --out=udpin:0.0.0.0:14551 --aircraft=bliptrip -a --logfile=mavproxy.tlog --mav20 --load-module=joystick --daemon
+ExecStart=/usr/local/bin/mavproxy.py --master=/dev/ttyUSB0,57600 --out=udpin:0.0.0.0:14551 --aircraft=bliptrip -a --logfile=mavproxy.tlog --mav20 --load-module=evjoy --daemon
 Restart=on-failure
 RestartSec=10
 TimeoutSec=infinity
 
 [Install]
 Alias=mavgateway
-RequiredBy=graphical.target ds4drv.service
+RequiredBy=ds4drv.service
