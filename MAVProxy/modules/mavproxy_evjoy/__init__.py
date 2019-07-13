@@ -54,7 +54,7 @@ class EvJoy(mp_module.MPModule):
 
         userevjoys = os.environ.get(
             'MAVPROXY_EVJOY_DIR',
-            mp_util.dot_mavproxy('evjoys'))
+            mp_util.dot_mavproxy('evjoy'))
         if userevjoys is not None and os.path.isdir(userevjoys):
             search.append(userevjoys)
 
@@ -92,7 +92,7 @@ class EvJoy(mp_module.MPModule):
                                        pattern.lower()):
                         self.log('Using {} ("{}" matches pattern "{}")'.format(
                             joydef['path'], dev.name, pattern))
-                        self.evjoy = controls.EvJoy(evjoy, joydef)
+                        self.evjoy = controls.EvJoy(dev, joydef)
                         return
 
         print('{}: Failed to find matching evjoy.'.format(__name__))
@@ -132,17 +132,15 @@ class EvJoy(mp_module.MPModule):
         if self.evjoy is None:
             return
 
-        for e in self.evjoy.read():
-            override = self.module('rc').override[:]
-            values = self.evjoy.read()
-            override = values + override[len(values):]
+        override = self.module('rc').override[:]
+        values = self.evjoy.read()
+        override = values + override[len(values):]
 
-            # self.log('channels: {}'.format(override), level=3)
-
-            if override != self.module('rc').override:
-                self.log('EvJoy Override mismatch', level=3)
-                self.module('rc').override = override
-                self.module('rc').override_period.force()
+        if override != self.module('rc').override:
+            self.log('EvJoy Override mismatch:', level=3)
+            print(override)
+            self.module('rc').override = override
+            self.module('rc').override_period.force()
 
 
 def init(mpstate):

@@ -1,4 +1,5 @@
 '''EvJoy control classes'''
+import evdev
 from evdev import ecodes
 
 def scale(val,
@@ -15,13 +16,17 @@ def scale(val,
 class Control (object):
     '''Base class for all controls'''
     def __init__(self, state,
-                 inlow=-1, inhigh=1,
+                 invert=False, inlow=0, inhigh=1,
                  outlow=1000, outhigh=2000):
         self.state = state
         self.inlow = inlow
         self.inhigh = inhigh
-        self.outlow = outlow
-        self.outhigh = outhigh
+        if( invert ):
+            self.outlow = outhigh
+            self.outhigh = outlow
+        else:
+            self.outlow = outlow
+            self.outhigh = outhigh
 
 
 class Button (Control):
@@ -32,11 +37,13 @@ class Button (Control):
     def __init__(self, state, id, **kwargs):
         super(Button, self).__init__(state, **kwargs)
         self.id = id
+        self.ecode = ecodes.ecodes[id]
+        self.state[self.ecode] = self.inlow
+        
 
-    @property
-    def value(self):
-        state = self.state[self.id]
-        if state:
+    def value(self, state):
+        pressed = state[self.ecode]
+        if pressed :
             return self.outhigh
         else:
             return self.outlow
@@ -50,17 +57,18 @@ class MultiButton (Control):
 
     def __init__(self, state, buttons, **kwargs):
         super(MultiButton, self).__init__(state, **kwargs)
+        for button in buttons:
+            button['ecode'] = ecodes.ecodes[button['id']]
+            self.state[button['ecode']] = 0
         self.buttons = buttons
         self._value = buttons[0]['value']
 
-    @property
-    def value(self):
+    def value(self,state):
         for button in self.buttons:
-            state = self.state[button['id']]
-            if state:
+            pressed = state[button['ecode']]
+            if pressed:
                 self._value = button['value']
                 break
-
         return self._value
 
 
@@ -68,18 +76,15 @@ class Axis (Control):
     '''An Axis maps a evjoy axis to a channel.  Set `invert` to
     `True` in order to reverse the direction of the input.'''
 
-    def __init__(self, state, id, invert=False, **kwargs):
+    def __init__(self, state, id, **kwargs):
         super(Axis, self).__init__(state, **kwargs)
         self.id = id
-        self.invert = invert
+        self.ecode = ecodes.ecodes[self.id]
+        self.state[self.ecode] = self.inlow
 
-    @property
-    def value(self):
-        val = self.state[self.id]
-        if self.invert:
-            val = -val
-
-        return scale(val, outlow=self.outlow, outhigh=self.outhigh)
+    def value(self,state):
+        val = state[self.ecode]
+        return scale(val, inlow=self.inlow, inhigh=self.inhigh, outlow=self.outlow, outhigh=self.outhigh)
 
 
 class Hat (Control):
@@ -91,15 +96,15 @@ class Hat (Control):
     def __init__(self, state, id, **kwargs):
         super(Hat, self).__init__(state, **kwargs)
         self.id = id
+        self.ecode = ecodes.ecodes[self.id]
+        self.state[self.ecode] = self.inlow
         self._value = self.outlow
 
-    @property
-    def value(self):
-        val = self.state[self.id]
+    def value(self,state):
+        val = state[self.ecode]
         if val != 0:
-            self._value = scale(value,
+            self._value = scale(val,
                                 outlow=self.outlow, outhigh=self.outhigh)
-
         return self._value
 
 
@@ -119,8 +124,7 @@ class EvJoy (object):
             if control['type'] == 'button':
                 kwargs = {k: control[k]
                           for k in control.keys()
-                          if k in ['outlow', 'outhigh']}
-                self.state[control['id']] = 0
+                          if k in ['invert', 'outlow', 'outhigh']}
                 handler = Button(self.state, control['id'], **kwargs)
 
             elif control['type'] == 'axis':
@@ -128,7 +132,6 @@ class EvJoy (object):
                           for k in control.keys()
                           if k in ['inlow', 'inhigh',
                                    'outlow', 'outhigh', 'invert']}
-                self.state[control['id']] = 0
                 handler = Axis(self.state, control['id'], **kwargs)
 
             elif control['type'] == 'multibutton':
@@ -137,34 +140,36 @@ class EvJoy (object):
             elif control['type'] == 'hat':
                 kwargs = {k: control[k]
                           for k in control.keys()
-                          if k in ['outlow', 'outhigh']}
-                self.state[control['id']] = 0
-                handler = Hat(self.state, control['id'])
+                          if k in ['invert', 'outlow', 'outhigh']}
+                handler = Hat(self.state, control['id'], **kwargs)
 
             self.channels[control['channel']-1] = handler
 
-    def read(self):
-        '''Returns an array of channel values.  Return 0 for channels
-        not specified in the control definition.'''
-
-        #Zero the state, as we will be resetting to appropriate values later
-        for k in self.state:
-            self.state[k] = 0
-
-        #Process currently active buttons/keys
-        active = self.evjoy.active_keys()
-        active_resolve = [ak[0] for ak in self.evjoy.resolve_ecodes(active)]
-        for ak in active_resolve:
+        #Read in initial values
+        #Set active buttons
+        for ak in self.evjoy.active_keys():
             if ak in self.state:
                 self.state[ak] = 1
-
         caps = self.evjoy.capabilities(absinfo=True) 
         #Process Axis and HAT data
         absinfos = caps[ecodes.EV_ABS]
         for absinfo in absinfos:
-            k_str = ecodes.ABS[absinfo[0]]
-            if k_str in self.state:
-                self.state[k_str] = absinfo[1].value
+            k = absinfo[0]
+            if k in self.state:
+                self.state[k] = absinfo[1].value
+    
+    def read(self):
+        '''Returns an array of channel values.  Return 0 for channels
+        not specified in the control definition.'''
 
-        return [int(handler.value) if handler is not None else 0
-                for handler in self.channels]
+        try:
+            for e in self.evjoy.read():
+                if e.code in self.state:
+                    print("Setting %d to %d." % (e.code, e.value))
+                    self.state[e.code] = e.value
+        except Exception as e:
+            pass
+
+        values = [int(handler.value(self.state)) if handler is not None else 0 for handler in self.channels]
+        return(values)
+
