@@ -43,13 +43,14 @@ controls:
           value: 1560
   #X hat switch - Arm Switch
   - channel: 6
-    type: hat
-    id: 'ABS_HAT0X'
+    type: button
+    id: 'BTN_JOYSTICK'
   #Y hat switch - Kill Switch
   - channel: 7
-    type: hat
-    id: 'ABS_HAT0Y'
-    invert: true
+    type: combobutton
+    cbuttons:
+        - id: 'BTN_THUMBL'
+        - id: 'BTN_THUMBR'
   #Home - RTL
   - channel: 8
     type: button    

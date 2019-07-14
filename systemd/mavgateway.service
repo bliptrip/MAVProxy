@@ -60,15 +60,13 @@ After=ds4drv.service
 
 [Service]
 WorkingDirectory=/home/pi/.mavproxy/
-Environment="DISPLAY=:0.0"
-Environment="XAUTHORITY=/home/pi/.Xauthority"
-Environment="MAVPROXY_EVJOY_DIR=/home/pi/.config/mavproxy/joysticks"
+Environment="HOME=/home/pi"
 Environment="LOCALAPPDATA=/home/pi/.mavproxy"
+Environment="MAVPROXY_EVJOY_DIR=/home/pi/.mavproxy/evjoy"
 ExecStart=/usr/local/bin/mavproxy.py --master=/dev/ttyUSB0,57600 --out=udpin:0.0.0.0:14551 --aircraft=bliptrip -a --logfile=mavproxy.tlog --mav20 --load-module=evjoy --daemon
 Restart=on-failure
 RestartSec=10
 TimeoutSec=infinity
 
 [Install]
-Alias=mavgateway
 RequiredBy=ds4drv.service

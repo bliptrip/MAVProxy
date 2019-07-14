@@ -29,6 +29,16 @@ class EvJoy(mp_module.MPModule):
         self.init_settings()
         self.init_commands()
 
+        search = []
+        userdir = os.environ.get('MAVPROXY_EVJOY_DIR')
+        if userdir is not None and os.path.isdir(userdir):
+            search.append(userdir)
+        userdir = mp_util.dot_mavproxy('evjoy')
+        if userdir is not None and os.path.isdir(userdir):
+            search.append(userdir)
+        search.append(pkg_resources.resource_filename(__name__, 'joysticks'))
+        self.search = search
+
         self.probe()
 
     def log(self, msg, level=0):
@@ -50,17 +60,8 @@ class EvJoy(mp_module.MPModule):
         self.log('Loading evjoy definitions', 1)
 
         self.joydefs = []
-        search = []
 
-        userevjoys = os.environ.get(
-            'MAVPROXY_EVJOY_DIR',
-            mp_util.dot_mavproxy('evjoy'))
-        if userevjoys is not None and os.path.isdir(userevjoys):
-            search.append(userevjoys)
-
-        search.append(pkg_resources.resource_filename(__name__, 'joysticks'))
-
-        for path in search:
+        for path in self.search:
             self.log('Looking for evjoy definitions in {}'.format(path),
                      2)
             path = os.path.expanduser(path)
@@ -92,7 +93,7 @@ class EvJoy(mp_module.MPModule):
                                        pattern.lower()):
                         self.log('Using {} ("{}" matches pattern "{}")'.format(
                             joydef['path'], dev.name, pattern))
-                        self.evjoy = controls.EvJoy(dev, joydef)
+                        self.evjoy = controls.EvJoy(dev, joydef, self.search)
                         return
 
         print('{}: Failed to find matching evjoy.'.format(__name__))
@@ -135,6 +136,9 @@ class EvJoy(mp_module.MPModule):
         override = self.module('rc').override[:]
         values = self.evjoy.read()
         override = values + override[len(values):]
+
+        #Execute any script actions registered with joystick controls
+        self.evjoy.act()
 
         if override != self.module('rc').override:
             self.log('EvJoy Override mismatch:', level=3)
