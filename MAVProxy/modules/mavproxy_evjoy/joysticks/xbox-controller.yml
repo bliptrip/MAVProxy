@@ -1,0 +1,58 @@
+description: >
+    Microsoft X-Box One pad
+match:
+  - 'Microsoft X-Box One pad'
+controls:
+  #For future reference, the inlow and inhigh values for the XBox ABS_Z and ABS_RZ are 0 and 1023
+  #Throttle on channel 3
+  - channel: 3
+    type: axis 
+    inlow: -32768
+    inhigh: 32767 
+    id: 'ABS_Y'
+    invert: true
+  #Yaw on channel 4
+  - channel: 4
+    type: axis 
+    inlow: -32768
+    inhigh: 32767
+    id: 'ABS_X'
+  #Pitch on channel 2
+  - channel: 2
+    type: axis
+    inlow: -32768
+    inhigh: 32767
+    id: 'ABS_RY'
+    invert: true
+  #Roll on channel 1
+  - channel: 1
+    inlow: -32768
+    inhigh: 32767
+    type: axis
+    id: 'ABS_RX'
+  #Mode selection
+  - channel: 5
+    type: multibutton
+    buttons:
+        - id: 'BTN_X'
+          value: 1080
+        - id: 'BTN_A'
+          value: 1240
+        - id: 'BTN_B'
+          value: 1400
+        - id: 'BTN_Y'
+          value: 1560
+  #X hat switch - Arm Switch
+  - channel: 6
+    type: button
+    id: 'BTN_START'
+  #Y hat switch - Kill Switch
+  - channel: 7
+    type: combobutton
+    cbuttons:
+        - id: 'BTN_THUMBL'
+        - id: 'BTN_THUMBR'
+  #Home - RTL
+  - channel: 8
+    type: button    
+    id: 'BTN_MODE'
