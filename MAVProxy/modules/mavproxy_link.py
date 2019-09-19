@@ -546,6 +546,7 @@ class LinkModule(mp_module.MPModule):
         # see if it is handled by a specialised sysid connection
         sysid = m.get_srcSystem()
         mtype = m.get_type()
+
         if sysid in self.mpstate.sysid_outputs:
             self.mpstate.sysid_outputs[sysid].write(m.get_msgbuf())
             if mtype == "GLOBAL_POSITION_INT":
@@ -614,6 +615,10 @@ class LinkModule(mp_module.MPModule):
                 if mtype not in self.no_fwd_types:
                     for r in self.mpstate.mav_outputs:
                         r.write(m.get_msgbuf())
+            if self.mpstate.settings.mavfwdmasters:
+                for omaster in self.mpstate.mav_master:
+                    if omaster != master:
+                        omaster.write(m.get_msgbuf())
 
             sysid = m.get_srcSystem()
             target_sysid = self.target_system

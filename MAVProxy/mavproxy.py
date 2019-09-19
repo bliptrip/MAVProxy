@@ -169,6 +169,7 @@ class MPState(object):
               MPSetting('streamrate2', int, 4, 'Stream rate link2', range=(-1,500), increment=1),
               MPSetting('heartbeat', int, 1, 'Heartbeat rate', range=(0,100), increment=1),
               MPSetting('mavfwd', bool, True, 'Allow forwarded control'),
+              MPSetting('mavfwdmasters', bool, True, 'Forward received messages to all masters.'),
               MPSetting('mavfwd_rate', bool, False, 'Allow forwarded rate control'),
               MPSetting('shownoise', bool, True, 'Show non-MAVLink data'),
               MPSetting('baudrate', int, opts.baudrate, 'baudrate for new links', range=(0,10000000), increment=1),
@@ -666,12 +667,19 @@ def process_mavlink(slave):
         return
     if msgs is None:
         return
-    if mpstate.settings.mavfwd and not mpstate.status.setup_mode:
+    if (mpstate.settings.mavfwd or mpstate.settings.mavfwdmasters) and not mpstate.status.setup_mode:
+        if( mpstate.settings.mavfwdmasters ):
+            masters = mpstate.mav_master
+        else:
+            masters = [mpstate.master()]
         for m in msgs:
-            mpstate.master().write(m.get_msgbuf())
+            msgbuf = m.get_msgbuf()
+            msgtype = m.get_type().upper()
+            for master in masters:
+                master.write(msgbuf)
             if mpstate.status.watch:
-                for msg_type in mpstate.status.watch:
-                    if fnmatch.fnmatch(m.get_type().upper(), msg_type.upper()):
+                for watch_type in mpstate.status.watch:
+                    if fnmatch.fnmatch(msgtype, watch_type.upper()):
                         mpstate.console.writeln('> '+ str(m))
                         break
     mpstate.status.counters['Slave'] += 1
