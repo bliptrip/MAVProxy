@@ -93,7 +93,7 @@ class EvJoy(mp_module.MPModule):
                                        pattern.lower()):
                         self.log('Using {} ("{}" matches pattern "{}")'.format(
                             joydef['path'], dev.name, pattern))
-                        self.evjoy = controls.EvJoy(dev, joydef, self.search)
+                        self.evjoy = controls.EvJoy(dev, joydef, self.search, self.log)
                         return
 
         print('{}: Failed to find matching evjoy.'.format(__name__))
@@ -142,7 +142,7 @@ class EvJoy(mp_module.MPModule):
 
         if override != self.module('rc').override:
             self.log('EvJoy Override mismatch:', level=3)
-            print(override)
+            self.log(override, level=3)
             self.module('rc').override = override
             self.module('rc').override_period.force()
 
