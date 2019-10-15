@@ -156,12 +156,12 @@ class Hat (Control):
 class EvJoy (object):
     '''A EvJoy manages a collection of Controls.'''
 
-    def __init__(self, evjoy, controls, search):
+    def __init__(self, evjoy, controls, search, log):
         self.evjoy = evjoy
         self.state = {}
         self.controls = controls
-
         self.search = search
+        self.log = log
 
         self.chan_max = max(control['channel']
                             for control in controls['controls'] if 'channel' in control)
@@ -236,9 +236,10 @@ class EvJoy (object):
 
         try:
             for e in self.evjoy.read():
-                if e.code in self.state:
-                    print("Setting %d to %d." % (e.code, e.value))
-                    self.state[e.code] = e.value
+                if (e.type == ecodes.EV_KEY) or (e.type == ecodes.EV_ABS):
+                    if e.code in self.state:
+                        self.log("Setting %d to %d." % (e.code, e.value), level=3)
+                        self.state[e.code] = e.value
         except Exception as e:
             pass
 
